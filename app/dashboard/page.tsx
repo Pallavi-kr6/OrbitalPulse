@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, Globe, MapPin, Loader2 } from "lucide-react";
 
 import { useLocationStore } from "@/store/useLocationStore";
-import { useISS } from "@/hooks/useISS";
 import { useSkyScore } from "@/hooks/useSkyScore";
 import { useSpaceWeather } from "@/hooks/useSpaceWeather";
-import { useAINarrator } from "@/hooks/useAINarrator";
+import { useISS } from "@/hooks/useISS";
 import { useTLEs } from "@/hooks/useTLEs";
+
+import { motion } from "framer-motion";
 
 import SolarRibbon from "./components/SolarRibbon";
 import OrbitalGlobe from "./components/OrbitalGlobe";
@@ -21,36 +21,60 @@ import WeatherPanel from "./components/WeatherPanel";
 import SatelliteDetailsDrawer from "./components/SatelliteDetailsDrawer";
 import ObservationWindow from "./components/ObservationWindow";
 import SpaceWeatherPanel from "./components/SpaceWeatherPanel";
-import AINarrator from "./components/AINarrator";
+
+import { useNarration } from "@/lib/hooks/useNarration";
+import { useAINarrator } from "@/hooks/useAINarrator";
 
 export default function DashboardPage() {
   const { latitude, longitude, setLocation } = useLocationStore();
+
   const [geoError, setGeoError] = useState<string | null>(null);
   const [geoLoading, setGeoLoading] = useState(true);
   const [selectedSat, setSelectedSat] = useState<ParsedSatellite | null>(null);
   const [trackedSatId, setTrackedSatId] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState<"sky" | "weather" | "space">("sky");
 
-  // Geolocation
+  const narrator = useNarration();
+  const aiNarrator = useAINarrator(latitude ?? 28.6139, longitude ?? 77.209);
+
+  // prevent spam speech
+  const spoken = useRef<Set<string>>(new Set());
+
+  // -----------------------------
+  // DATA HOOKS (keep ABOVE effects)
+  // -----------------------------
+  const skyScore = useSkyScore(latitude ?? 28.6139, longitude ?? 77.209);
+  const spaceWeather = useSpaceWeather();
+  const iss = useISS();
+  const tles = useTLEs();
+
+  const issData = iss.data;
+  const skyData = skyScore.data;
+  const spData = spaceWeather.data;
+
+  // -----------------------------
+  // GEO LOCATION
+  // -----------------------------
   useEffect(() => {
     if (latitude != null && longitude != null) {
       setGeoLoading(false);
       return;
     }
+
     if (!navigator.geolocation) {
       setGeoError("Geolocation not supported");
-      setGeoLoading(false);
-      // Default to Delhi
       setLocation(28.6139, 77.209);
+      setGeoLoading(false);
       return;
     }
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocation(pos.coords.latitude, pos.coords.longitude);
         setGeoLoading(false);
       },
       () => {
-        setGeoError("Location denied — using Delhi");
+        setGeoError("Location denied — using default sky view");
         setLocation(28.6139, 77.209);
         setGeoLoading(false);
       },
@@ -58,19 +82,100 @@ export default function DashboardPage() {
     );
   }, [latitude, longitude, setLocation]);
 
-  // Data hooks
-  const iss = useISS();
-  const skyScore = useSkyScore(latitude ?? 28.6139, longitude ?? 77.209);
-  const spaceWeather = useSpaceWeather();
-  const aiNarrator = useAINarrator(latitude ?? 28.6139, longitude ?? 77.209);
-  const tles = useTLEs();
+  // -----------------------------
+  // 🎙️ GLOBAL INTRO (AUTO SPEAK)
+  // -----------------------------
+  useEffect(() => {
+    if (spoken.current.has("intro")) return;
 
-  const issData = iss.data;
-  const skyData = skyScore.data;
-  const spData = spaceWeather.data;
-  const aiData = aiNarrator.data;
-  const tleData = tles.data;
+    narrator.speakPriority(
+      "Welcome to Orbital Pulse. I am your AI sky guide. I will describe everything you see in real time — satellites, weather, and space activity above you."
+    );
 
+    spoken.current.add("intro");
+  }, []);
+
+  // -----------------------------
+  // 🎙️ LOADING NARRATION FLOW
+  // -----------------------------
+  useEffect(() => {
+    if (geoLoading && !spoken.current.has("geo")) {
+      narrator.speak("Acquiring your location to map the sky above you.");
+      spoken.current.add("geo");
+      return;
+    }
+
+    if (iss.isLoading && !spoken.current.has("iss")) {
+      narrator.speak("Tracking satellites currently passing above your region.");
+      spoken.current.add("iss");
+    }
+
+    if (skyScore.isLoading && !spoken.current.has("sky")) {
+      narrator.speak("Analyzing sky clarity, cloud cover, and visibility conditions.");
+      spoken.current.add("sky");
+    }
+
+    if (spaceWeather.isLoading && !spoken.current.has("space")) {
+      narrator.speak("Checking solar activity and space weather conditions.");
+      spoken.current.add("space");
+    }
+  }, [geoLoading, iss.isLoading, skyScore.isLoading, spaceWeather.isLoading]);
+
+  // -----------------------------
+  // 🎙️ FINAL SUMMARY NARRATION
+  // -----------------------------
+  useEffect(() => {
+    const allLoaded =
+      !geoLoading &&
+      !iss.isLoading &&
+      !skyScore.isLoading &&
+      !spaceWeather.isLoading &&
+      !tles.isLoading;
+
+    if (!allLoaded || spoken.current.has("summary")) return;
+
+    spoken.current.add("summary");
+
+    if (aiNarrator?.data?.summary) {
+      narrator.speakPriority(aiNarrator.data.summary);
+      return;
+    }
+
+    const visibility = skyScore.data?.visibilityKm ?? 0;
+    const cloud = skyScore.data?.cloudCover ?? 0;
+    const kp = spaceWeather.data?.latestKpIndex ?? 0;
+    const nextPass = issData?.passes?.passes?.[0];
+
+    let summary = `Sky scan complete. Visibility is ${visibility.toFixed(
+      1
+    )} kilometers with ${cloud}% cloud cover.`;
+
+    if (nextPass) {
+      summary += ` The International Space Station will be visible at ${new Date(
+        nextPass.startUTC
+      ).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}, moving at an elevation of ${nextPass.maxElevation.toFixed(
+        0
+      )} degrees.`;
+    }
+
+    summary += ` Current solar activity level is Kp index ${kp}.`;
+
+    narrator.speakPriority(summary);
+  }, [
+    geoLoading,
+    iss.isLoading,
+    skyScore.isLoading,
+    spaceWeather.isLoading,
+    tles.isLoading,
+    aiNarrator.data,
+  ]);
+
+  // -----------------------------
+  // HANDLERS
+  // -----------------------------
   const handleSatClick = useCallback((sat: ParsedSatellite) => {
     setSelectedSat(sat);
   }, []);
@@ -80,7 +185,9 @@ export default function DashboardPage() {
     setSelectedSat(null);
   }, []);
 
-  // Loading screen
+  // -----------------------------
+  // LOADING SCREEN
+  // -----------------------------
   if (geoLoading) {
     return (
       <div className="min-h-screen bg-[#030014] flex flex-col items-center justify-center gap-4">
@@ -89,15 +196,12 @@ export default function DashboardPage() {
           animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col items-center gap-4"
         >
-          <div className="relative">
-            <Globe className="h-16 w-16 text-blue-500 animate-spin" style={{ animationDuration: "3s" }} />
-            <MapPin className="h-6 w-6 text-amber-400 absolute -bottom-1 -right-1 animate-bounce" />
+          <Globe className="h-16 w-16 text-blue-500 animate-spin" />
+          <div className="text-center">
+            <h2 className="text-white font-bold">Initializing Orbital Pulse</h2>
+            <p className="text-zinc-400 text-sm">Preparing sky simulation...</p>
           </div>
-          <div className="text-center space-y-2">
-            <h2 className="text-lg font-bold font-mono text-white">Scanning Your Sky…</h2>
-            <p className="text-sm text-zinc-400 font-mono">Requesting location access</p>
-            <Loader2 className="h-5 w-5 text-blue-400 animate-spin mx-auto" />
-          </div>
+          <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
         </motion.div>
       </div>
     );
@@ -107,163 +211,105 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#030014] flex flex-col">
-      {/* Solar Ribbon */}
       <SolarRibbon />
 
-      {/* Top nav bar */}
+      {/* HEADER */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-black/40 backdrop-blur-md">
-        <Link href="/" className="flex items-center gap-2 text-xs font-mono text-zinc-400 hover:text-white transition-colors">
-          <ArrowLeft className="h-3.5 w-3.5" />
+        <Link href="/" className="text-xs text-zinc-400 flex items-center gap-2">
+          <ArrowLeft className="h-3 w-3" />
           Home
         </Link>
-        <div className="flex items-center gap-2">
-          <Globe className="h-3.5 w-3.5 text-blue-400 animate-spin" style={{ animationDuration: "8s" }} />
-          <span className="text-xs font-mono font-bold text-white tracking-widest">ORBITAL PULSE</span>
+
+        <div className="flex items-center gap-2 text-white font-bold text-xs">
+          <Globe className="h-3 w-3 text-blue-400 animate-spin" />
+          ORBITAL PULSE
         </div>
-        <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-500">
+
+        <div className="text-[10px] text-zinc-400 flex items-center gap-1">
           <MapPin className="h-3 w-3 text-amber-400" />
           {latitude?.toFixed(2)}°N / {longitude?.toFixed(2)}°E
-          {geoError && <span className="text-amber-500">({geoError})</span>}
         </div>
       </header>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
-        {/* LEFT — Globe */}
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative flex-1 min-h-[50vh] lg:min-h-0"
-        >
+      {/* MAIN */}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        {/* LEFT */}
+        <div className="flex-1 relative">
           <OrbitalGlobe
-            tles={tleData?.tles ?? []}
+            tles={tles.data?.tles ?? []}
             onSatelliteClick={handleSatClick}
             trackedSatId={trackedSatId}
             userLat={latitude}
             userLon={longitude}
           />
 
-          {/* Satellite drawer overlay */}
           <SatelliteDetailsDrawer
             satellite={selectedSat}
             onClose={() => setSelectedSat(null)}
             onTrack={handleTrack}
           />
+        </div>
 
-          {/* Tracking indicator */}
-          {trackedSatId && (
-            <div className="absolute top-3 left-3 z-30 bg-black/80 backdrop-blur-md border border-blue-500/30 rounded-lg px-3 py-1.5 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-              <span className="text-[10px] font-mono text-blue-400">Tracking: {trackedSatId}</span>
-              <button
-                onClick={() => setTrackedSatId(null)}
-                className="text-zinc-500 hover:text-white text-xs ml-1"
-              >
-                ✕
-              </button>
-            </div>
+        {/* RIGHT */}
+        <div className="w-full lg:w-[420px] border-l border-white/5 bg-black/30 flex flex-col">
+          <div className="p-2 text-xs text-purple-400 border-b border-white/5">
+            ● Voice Narration Active
+          </div>
+
+          {rightTab === "sky" && (
+            <SkyScoreCard
+              score={skyData?.skyScore ?? null}
+              cloudCover={skyData?.cloudCover ?? 0}
+              visibilityKm={skyData?.visibilityKm ?? 0}
+              moonIllumination={skyData?.moonIllumination ?? 0}
+              kpIndex={skyData?.kpIndex ?? 0}
+              lightPollution={skyData?.lightPollutionEstimate ?? 0}
+              isLoading={skyScore.isLoading}
+            />
           )}
 
-          {/* TLE loading state */}
-          {tles.isLoading && (
-            <div className="absolute top-3 left-3 z-30 bg-black/80 backdrop-blur-md border border-white/10 rounded-lg px-3 py-1.5 flex items-center gap-2">
-              <Loader2 className="h-3 w-3 text-blue-400 animate-spin" />
-              <span className="text-[10px] font-mono text-zinc-400">Loading satellite TLEs from CelesTrak…</span>
-            </div>
+          {rightTab === "weather" && (
+            <WeatherPanel
+              temperature={skyData?.temperature ?? 0}
+              windSpeed={skyData?.windSpeed ?? 0}
+              windDirection={skyData?.windDirection ?? 0}
+              cloudCover={skyData?.cloudCover ?? 0}
+              visibilityKm={skyData?.visibilityKm ?? 0}
+              humidity={skyData?.humidity ?? 0}
+              weatherCode={skyData?.weatherCode ?? 0}
+              isDay={skyData?.isDay ?? true}
+              isLoading={skyScore.isLoading}
+            />
           )}
-        </motion.div>
 
-        {/* RIGHT — Panels */}
-        <motion.div
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="w-full lg:w-[380px] xl:w-[420px] border-l border-white/5 bg-black/30 backdrop-blur-md flex flex-col overflow-y-auto"
-        >
-          {/* Tab bar */}
-          <div className="flex border-b border-white/5 bg-black/20">
-            {(["sky", "weather", "space"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setRightTab(tab)}
-                className={`flex-1 py-2.5 text-[10px] font-mono uppercase tracking-widest transition-all border-b-2 ${
-                  rightTab === tab
-                    ? "text-blue-400 border-blue-400 bg-blue-500/5"
-                    : "text-zinc-600 border-transparent hover:text-zinc-400"
-                }`}
-              >
-                {tab === "sky" ? "Sky Score" : tab === "weather" ? "Weather" : "Space Wx"}
-              </button>
-            ))}
-          </div>
-
-          {/* Tab content */}
-          <div className="flex-1 min-h-0">
-            {rightTab === "sky" && (
-              <SkyScoreCard
-                score={skyData?.skyScore ?? null}
-                cloudCover={skyData?.cloudCover ?? 0}
-                visibilityKm={skyData?.visibilityKm ?? 0}
-                moonIllumination={skyData?.moonIllumination ?? 0}
-                kpIndex={skyData?.kpIndex ?? 0}
-                lightPollution={skyData?.lightPollutionEstimate ?? 0}
-                isLoading={skyScore.isLoading}
-              />
-            )}
-            {rightTab === "weather" && (
-              <WeatherPanel
-                temperature={skyData?.temperature ?? 0}
-                windSpeed={skyData?.windSpeed ?? 0}
-                windDirection={skyData?.windDirection ?? 0}
-                cloudCover={skyData?.cloudCover ?? 0}
-                visibilityKm={skyData?.visibilityKm ?? 0}
-                humidity={skyData?.humidity ?? 0}
-                weatherCode={skyData?.weatherCode ?? 0}
-                isDay={skyData?.isDay ?? true}
-                isLoading={skyScore.isLoading}
-              />
-            )}
-            {rightTab === "space" && (
-              <SpaceWeatherPanel
-                kpIndex={spData?.latestKpIndex ?? 0}
-                flares={spData?.solarFlares ?? []}
-                cmes={spData?.coronalMassEjections ?? []}
-                storms={spData?.geomagneticStorms ?? []}
-                isLoading={spaceWeather.isLoading}
-              />
-            )}
-          </div>
-
-          {/* ISS Compass */}
-          <div className="border-t border-white/5">
-            <ISSCompass
-              issLat={issData?.latitude ?? null}
-              issLon={issData?.longitude ?? null}
-              userLat={latitude}
-              userLon={longitude}
-              nextPass={nextPass}
-              isLoading={iss.isLoading}
+          {rightTab === "space" && (
+            <SpaceWeatherPanel
+              kpIndex={spData?.latestKpIndex ?? 0}
+              flares={spData?.solarFlares ?? []}
+              cmes={spData?.coronalMassEjections ?? []}
+              storms={spData?.geomagneticStorms ?? []}
+              isLoading={spaceWeather.isLoading}
             />
-          </div>
+          )}
 
-          {/* Observation Window */}
-          <div className="border-t border-white/5">
-            <ObservationWindow
-              passes={issData?.passes?.passes ?? []}
-              isLoading={iss.isLoading}
-            />
-          </div>
-        </motion.div>
-      </div>
+          <ISSCompass
+            issLat={issData?.latitude ?? null}
+            issLon={issData?.longitude ?? null}
+            userLat={latitude}
+            userLon={longitude}
+            nextPass={nextPass}
+            isLoading={iss.isLoading}
+          />
 
-      {/* Bottom — AI Narrator */}
-      <div className="border-t border-white/5 bg-black/40 backdrop-blur-md">
-        <AINarrator
-          narration={aiData ?? null}
-          isLoading={aiNarrator.isLoading}
-          onRefresh={() => aiNarrator.refetch()}
-        />
+          <ObservationWindow
+            passes={issData?.passes?.passes ?? []}
+            isLoading={iss.isLoading}
+          />
+
+          <div className="p-2 text-xs text-zinc-400 border-t border-white/5">
+            Narration adapts automatically to sky activity in real time.
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -3,10 +3,12 @@ import Hero from './components/Hero';
 import FeatureGrid from './components/FeatureGrid';
 import Footer from './components/Footer';
 import Lightfall from './Lightfall';
+import LandingNarrator from './components/LandingNarrator';
 
 export default function Home() {
   return (
     <div className="relative min-h-screen">
+      <LandingNarrator />
       {/* Whole-screen Lightfall background */}
       <div className="fixed inset-0 w-screen h-screen -z-50">
         <Lightfall
