@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
-    const payload = await memoize("iss-position", 30, async () => {
+    const payload = await memoize("iss-position", 60, async () => {
       const position = await getISSPosition();
       const passes = await getNextISSPass(position.latitude, position.longitude, position.altitude);
       

@@ -1,12 +1,11 @@
 import * as satellite from "satellite.js";
-import { getTleByGroup } from "@/services/celestrak";
+import { getISSTle } from "@/lib/satellites/issTracker";
 import { SatellitePass } from "@/types/astronomy";
 
 const ELEVATION_THRESHOLD = 0;
 
 export async function getIssPasses(latitude: number, longitude: number, altitudeKm = 0): Promise<SatellitePass> {
-  const tles = await getTleByGroup("stations");
-  const iss = tles.find((tle) => tle.name.toLowerCase().includes("iss")) ?? tles[0];
+  const iss = await getISSTle();
   const satrec = satellite.twoline2satrec(iss.line1, iss.line2);
   const now = new Date();
   const endTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -27,9 +26,13 @@ export async function getIssPasses(latitude: number, longitude: number, altitude
       satellite.eciToEcf(position, gmst),
     );
 
-    const elevation = satellite.degreesLat(lookAngles.elevation);
-    const azimuth = satellite.degreesLong(lookAngles.azimuth);
+   const elevation = satellite.radiansToDegrees(
+  lookAngles.elevation
+);
 
+const azimuth = satellite.radiansToDegrees(
+  lookAngles.azimuth
+);
     if (elevation > ELEVATION_THRESHOLD) {
       if (!currentPass) {
         currentPass = {

@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { fetchJson } from "@/lib/api-client";
 import { OpenMeteoResponse } from "@/types/clients";
+import { memoize } from "@/server/redis";
+import { logger } from "@/lib/logger";
 
 const openMeteoSchema = z.object({
   latitude: z.number(),
@@ -29,18 +31,27 @@ const openMeteoSchema = z.object({
 });
 
 export async function getOpenMeteoWeather(latitude: number, longitude: number, timezone = "auto"): Promise<OpenMeteoResponse> {
-  const query = new URLSearchParams({
-    latitude: String(latitude),
-    longitude: String(longitude),
-    hourly: "temperature_2m,relativehumidity_2m,cloudcover,visibility,weathercode",
-    current_weather: "true",
-    timezone,
-  });
-  const url = `https://api.open-meteo.com/v1/forecast?${query.toString()}`;
-  return fetchJson<OpenMeteoResponse>(url, {
-    timeoutMs: 10_000,
-    retries: 2,
-    backoffMs: 300,
-    schema: openMeteoSchema,
+  const cacheKey = `open-meteo-${latitude}-${longitude}-${timezone}`;
+  return memoize(cacheKey, 600, async () => { // 10 minutes cache
+    const query = new URLSearchParams({
+      latitude: String(latitude),
+      longitude: String(longitude),
+      hourly: "temperature_2m,relativehumidity_2m,cloudcover,visibility,weathercode",
+      current_weather: "true",
+      timezone,
+    });
+    const url = `https://api.open-meteo.com/v1/forecast?${query.toString()}`;
+    
+    try {
+      return await fetchJson<OpenMeteoResponse>(url, {
+        timeoutMs: 10_000,
+        retries: 2,
+        backoffMs: 300,
+        schema: openMeteoSchema,
+      });
+    } catch (error) {
+      logger.error("Failed to fetch Open-Meteo weather", { error: String(error) });
+      throw error;
+    }
   });
 }
