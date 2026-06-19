@@ -80,13 +80,13 @@ export async function getNextISSPass(latitude: number, longitude: number, altitu
       const gmst = satellite.gstime(date);
       // Compute look angles; elevation and azimuth are returned in radians.
       const lookAngles = satellite.ecfToLookAngles(
-        { latitude: satellite.degreesToRadians(latitude), longitude: satellite.degreesToRadians(longitude), height: altitudeKm * 1000 },
+        { latitude: latitude * Math.PI / 180, longitude: longitude * Math.PI / 180, height: altitudeKm * 1000 },
         satellite.eciToEcf(position, gmst),
       );
 
       // Convert from radians to degrees for human‑readable values and comparisons.
-      const elevation = satellite.radiansToDegrees(lookAngles.elevation);
-      const azimuth = satellite.radiansToDegrees(lookAngles.azimuth);
+      const elevation = lookAngles.elevation * 180 / Math.PI;
+      const azimuth = lookAngles.azimuth * 180 / Math.PI;
       // Elevation threshold is defined in degrees.
 
       if (elevation > ELEVATION_THRESHOLD) {

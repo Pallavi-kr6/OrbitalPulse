@@ -22,17 +22,13 @@ export async function getIssPasses(latitude: number, longitude: number, altitude
     const gmst = satellite.gstime(date);
     const geodetic = satellite.eciToGeodetic(position, gmst);
     const lookAngles = satellite.ecfToLookAngles(
-      { latitude: satellite.degreesToRadians(latitude), longitude: satellite.degreesToRadians(longitude), height: altitudeKm * 1000 },
+      { latitude: latitude * Math.PI / 180, longitude: longitude * Math.PI / 180, height: altitudeKm * 1000 },
       satellite.eciToEcf(position, gmst),
     );
 
-   const elevation = satellite.radiansToDegrees(
-  lookAngles.elevation
-);
+   const elevation = lookAngles.elevation * 180 / Math.PI;
 
-const azimuth = satellite.radiansToDegrees(
-  lookAngles.azimuth
-);
+const azimuth = lookAngles.azimuth * 180 / Math.PI;
     if (elevation > ELEVATION_THRESHOLD) {
       if (!currentPass) {
         currentPass = {

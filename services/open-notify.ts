@@ -1,5 +1,5 @@
 // services/open-notify.ts
-export async function getISSPosition() {
+export async function getISSPosition(): Promise<{ timestamp: number; iss_position: { latitude: string; longitude: string } }> {
   const res = await fetch("http://api.open-notify.org/iss-now.json");
   const data = await res.json();
 
