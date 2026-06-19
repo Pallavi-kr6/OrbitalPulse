@@ -10,6 +10,9 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.0",
+    "@upstash/redis": "^1.38.0",
+    "astronomy-engine": "^2.1.19",
+    "cesium": "^1.110.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.40.0",
     "lucide-react": "^1.20.0",
@@ -17,9 +20,13 @@
     "ogl": "^1.0.11",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "resium": "^1.23.0",
+    "satellite.js": "^4.0.2",
+    "suncalc": "^1.9.0",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.14",
+    "zod": "^3.23.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
