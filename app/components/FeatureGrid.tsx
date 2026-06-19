@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
@@ -174,41 +175,81 @@ export default function FeatureGrid() {
             transition={{ duration: 0.6, delay: idx * 0.1 }}
             className="flex"
           >
-            <Card className="glass-panel glass-panel-hover flex-1 flex flex-col justify-between overflow-hidden relative group">
-              {/* Subtle hover background highlight */}
-              <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <CardHeader className="p-6 pb-2 relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 group-hover:border-white/20 transition-all duration-300">
-                    {feature.icon}
-                  </div>
-                  {feature.badge && (
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 bg-zinc-800/30 px-2 py-0.5 rounded-full border border-white/5">
-                      {feature.badge}
-                    </span>
-                  )}
-                </div>
-                <CardTitle className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">
-                  {feature.title}
-                </CardTitle>
-              </CardHeader>
-              
-              <CardContent className="p-6 pt-2 relative z-10 flex-1 flex flex-col justify-between">
-                <p className="text-zinc-400 text-xs sm:text-sm font-light leading-relaxed mb-4">
-                  {feature.description}
-                </p>
-                <div>
-                  {feature.visualComponent}
-                  {feature.stats && (
-                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between font-mono text-[10px] text-zinc-500">
-                      <span>METRIC:</span>
-                      <span className="text-zinc-300">{feature.stats}</span>
+            {feature.id === "globe" ? (
+              <Link href="/globe" className="flex flex-1">
+                <Card className="glass-panel glass-panel-hover flex-1 flex flex-col justify-between overflow-hidden relative group cursor-pointer">
+                  {/* Subtle hover background highlight */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  <CardHeader className="p-6 pb-2 relative z-10">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 group-hover:border-white/20 transition-all duration-300">
+                        {feature.icon}
+                      </div>
+                      {feature.badge && (
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 bg-zinc-800/30 px-2 py-0.5 rounded-full border border-white/5">
+                          {feature.badge}
+                        </span>
+                      )}
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    <CardTitle className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">
+                      {feature.title}
+                    </CardTitle>
+                  </CardHeader>
+                  
+                  <CardContent className="p-6 pt-2 relative z-10 flex-1 flex flex-col justify-between">
+                    <p className="text-zinc-400 text-xs sm:text-sm font-light leading-relaxed mb-4">
+                      {feature.description}
+                    </p>
+                    <div>
+                      {feature.visualComponent}
+                      {feature.stats && (
+                        <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between font-mono text-[10px] text-zinc-500">
+                          <span>METRIC:</span>
+                          <span className="text-zinc-300">{feature.stats}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ) : (
+              <Card className="glass-panel glass-panel-hover flex-1 flex flex-col justify-between overflow-hidden relative group">
+                {/* Subtle hover background highlight */}
+                <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                
+                <CardHeader className="p-6 pb-2 relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 group-hover:border-white/20 transition-all duration-300">
+                      {feature.icon}
+                    </div>
+                    {feature.badge && (
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 bg-zinc-800/30 px-2 py-0.5 rounded-full border border-white/5">
+                        {feature.badge}
+                      </span>
+                    )}
+                  </div>
+                  <CardTitle className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">
+                    {feature.title}
+                  </CardTitle>
+                </CardHeader>
+                
+                <CardContent className="p-6 pt-2 relative z-10 flex-1 flex flex-col justify-between">
+                  <p className="text-zinc-400 text-xs sm:text-sm font-light leading-relaxed mb-4">
+                    {feature.description}
+                  </p>
+                  <div>
+                    {feature.visualComponent}
+                    {feature.stats && (
+                      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between font-mono text-[10px] text-zinc-500">
+                        <span>METRIC:</span>
+                        <span className="text-zinc-300">{feature.stats}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </motion.div>
         ))}
       </div>
