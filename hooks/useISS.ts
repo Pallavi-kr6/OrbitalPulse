@@ -10,9 +10,11 @@ export function useISS() {
       if (!response.ok) {
         throw new Error("Failed to load ISS position");
       }
-      return response.json();
+      const result = await response.json();
+      return result.data ?? result; // Handle both wrapped ({success, data}) and unwrapped responses
     },
     staleTime: 5000,
-    retry: 2,
+    retry: 3,
+    refetchOnWindowFocus: false,
   });
 }

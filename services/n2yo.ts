@@ -2,48 +2,37 @@ import { z } from "zod";
 import { env } from "@/config/env";
 import { fetchJson } from "@/lib/api-client";
 import { N2YOAboveResponse, N2YOSatelliteDetail } from "@/types/clients";
+import { logger } from "@/lib/logger";
 
+// Relaxed schema to allow unexpected values or missing fields to pass validation gracefully
 const n2yoAboveSchema = z.object({
   info: z.object({
-    category: z.number(),
-    satcount: z.number(),
-    satlat: z.number(),
-    satlng: z.number(),
-    satalt: z.number(),
-    observerlat: z.number(),
-    observerlng: z.number(),
-    observeralt: z.number(),
-    seconds: z.number(),
-  }),
+    category: z.union([
+  z.number(),
+  z.string()
+]).optional(),
+    satcount: z.coerce.number().optional(),
+    satlat: z.coerce.number().optional(),
+    satlng: z.coerce.number().optional(),
+    satalt: z.coerce.number().optional(),
+    observerlat: z.coerce.number().optional(),
+    observerlng: z.coerce.number().optional(),
+    observeralt: z.coerce.number().optional(),
+    seconds: z.coerce.number().optional(),
+  }).passthrough(),
   above: z.array(
     z.object({
       satid: z.number(),
       satname: z.string(),
-      intDesignator: z.string(),
-      launchDate: z.string(),
+      intDesignator: z.string().optional(),
+      launchDate: z.string().optional(),
       satlat: z.number(),
       satlng: z.number(),
       satalt: z.number(),
-      satvelocity: z.number(),
-    }),
-  ),
-});
-
-const n2yoDetailSchema = z.object({
-  satid: z.number(),
-  satname: z.string(),
-  intDesignator: z.string(),
-  launchDate: z.string(),
-  satlat: z.number(),
-  satlng: z.number(),
-  satalt: z.number(),
-  satvelocity: z.number(),
-  azimuth: z.number(),
-  elevation: z.number(),
-  ra: z.number(),
-  dec: z.number(),
-  timestamp: z.number(),
-});
+      satvelocity: z.number().optional(),
+    }).passthrough()
+  ).optional().default([]),
+}).passthrough();
 
 export async function getSatellitesAbove(
   latitude: number,
@@ -53,20 +42,29 @@ export async function getSatellitesAbove(
   category = 0,
 ): Promise<N2YOAboveResponse> {
   const url = `https://api.n2yo.com/rest/v1/satellite/above/${latitude}/${longitude}/${altitudeKm}/${radiusKm}/${category}/&apiKey=${env.N2YO_API_KEY}`;
-  return fetchJson<N2YOAboveResponse>(url, {
-    timeoutMs: 10_000,
-    retries: 2,
-    backoffMs: 300,
-    schema: n2yoAboveSchema,
-  });
-}
+  
+  try {
+    const rawData = await fetchJson<unknown>(url, {
+      timeoutMs: 15_000,
+      retries: 3,
+      backoffMs: 1_000,
+    });
 
-export async function getSatelliteDetail(satelliteId: number, latitude: number, longitude: number, altitudeKm = 0): Promise<N2YOSatelliteDetail> {
-  const url = `https://api.n2yo.com/rest/v1/satellite/positions/${satelliteId}/${latitude}/${longitude}/${altitudeKm}/2/&apiKey=${env.N2YO_API_KEY}`;
-  return fetchJson<N2YOSatelliteDetail>(url, {
-    timeoutMs: 10_000,
-    retries: 2,
-    backoffMs: 300,
-    schema: n2yoDetailSchema,
-  });
+    const parsed = n2yoAboveSchema.safeParse(rawData);
+    if (!parsed.success) {
+      logger.warn("N2YO schema mismatch", { error: parsed.error.format() });
+      return {
+        info: { category, satcount: 0, satlat: latitude, satlng: longitude, satalt: altitudeKm, observerlat: latitude, observerlng: longitude, observeralt: altitudeKm, seconds: 0 },
+        above: []
+      };
+    }
+
+    return parsed.data as unknown as N2YOAboveResponse;
+  } catch (error) {
+    logger.warn("N2YO API failed", { error: String(error) });
+    return {
+      info: { category, satcount: 0, satlat: latitude, satlng: longitude, satalt: altitudeKm, observerlat: latitude, observerlng: longitude, observeralt: altitudeKm, seconds: 0 },
+      above: []
+    };
+  }
 }

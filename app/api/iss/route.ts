@@ -1,20 +1,26 @@
-import { getISSPosition } from "@/services/open-notify";
-import { getIssPasses } from "@/services/satellite-js";
-import { jsonResponse } from "@/lib/api-client";
+import { getISSPosition, getNextISSPass } from "@/lib/satellites/issTracker";
+import { successResponse, fallbackResponse } from "@/lib/api-client";
 import { memoize } from "@/server/redis";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
-  const payload = await memoize("iss-position", 5, async () => {
-    const response = await getISSPosition();
-    const passes = await getIssPasses(Number(response.iss_position.latitude), Number(response.iss_position.longitude));
-    return {
-      timestamp: response.timestamp,
-      latitude: Number(response.iss_position.latitude),
-      longitude: Number(response.iss_position.longitude),
-      message: response.message,
-      passes,
-    };
-  });
+  try {
+    const payload = await memoize("iss-position", 30, async () => {
+      const position = await getISSPosition();
+      const passes = await getNextISSPass(position.latitude, position.longitude, position.altitude);
+      
+      return {
+        timestamp: position.timestamp,
+        latitude: position.latitude,
+        longitude: position.longitude,
+        altitude: position.altitude,
+        passes,
+      };
+    });
 
-  return jsonResponse(payload);
+    return successResponse(payload, "celestrak");
+  } catch (error) {
+    logger.error("GET /api/iss failed", { error: String(error) });
+    return fallbackResponse("Service unavailable", null, "system");
+  }
 }

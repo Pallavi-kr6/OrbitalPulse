@@ -10,10 +10,12 @@ export function useAINarrator(latitude: number, longitude: number) {
       if (!response.ok) {
         throw new Error("Failed to load AI narration");
       }
-      return response.json();
+      const result = await response.json();
+      return result.data ?? result;
     },
     staleTime: 900_000,
-    retry: 2,
+    retry: 3,
+    refetchOnWindowFocus: false,
     enabled: typeof latitude === "number" && typeof longitude === "number",
   });
 }

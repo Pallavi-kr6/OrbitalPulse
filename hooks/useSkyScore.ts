@@ -10,10 +10,12 @@ export function useSkyScore(latitude: number, longitude: number) {
       if (!response.ok) {
         throw new Error("Failed to load sky score");
       }
-      return response.json();
+      const result = await response.json();
+      return result.data ?? result;
     },
     staleTime: 300_000,
-    retry: 2,
+    retry: 3,
+    refetchOnWindowFocus: false,
     enabled: typeof latitude === "number" && typeof longitude === "number",
   });
 }

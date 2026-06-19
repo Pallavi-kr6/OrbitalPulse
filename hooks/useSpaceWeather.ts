@@ -10,9 +10,11 @@ export function useSpaceWeather() {
       if (!response.ok) {
         throw new Error("Failed to load space weather");
       }
-      return response.json();
+      const result = await response.json();
+      return result.data ?? result;
     },
     staleTime: 300_000,
-    retry: 2,
+    retry: 3,
+    refetchOnWindowFocus: false,
   });
 }

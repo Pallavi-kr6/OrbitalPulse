@@ -68,13 +68,15 @@ export default function Hero() {
           transition={{ duration: 1, delay: 0.5 }}
           className="flex flex-col sm:flex-row gap-4 mt-4 w-full sm:w-auto px-4"
         >
-          <Button
-            size="lg"
-            className="w-full sm:w-auto rounded-full font-bold uppercase tracking-widest text-xs px-8 py-6 gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:shadow-[0_0_40px_rgba(59,130,246,0.5)] border-0 text-white cursor-pointer"
-          >
-            <Compass className="h-4 w-4" />
-            Scan My Sky
-          </Button>
+          <Link href="/dashboard" className="w-full sm:w-auto">
+            <Button
+              size="lg"
+              className="w-full sm:w-auto rounded-full font-bold uppercase tracking-widest text-xs px-8 py-6 gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:shadow-[0_0_40px_rgba(59,130,246,0.5)] border-0 text-white cursor-pointer"
+            >
+              <Compass className="h-4 w-4" />
+              Scan My Sky
+            </Button>
+          </Link>
           <Link href="/globe" className="w-full sm:w-auto">
             <Button
               size="lg"
