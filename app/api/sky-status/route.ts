@@ -1,7 +1,7 @@
 import { jsonResponse } from "@/lib/api-client";
 import { memoize } from "@/server/redis";
 import { parseLocation } from "@/lib/route-utils";
-import { getISSPosition } from "@/services/open-notify";
+import { getISSPosition } from "@/lib/satellites/issTracker";
 import { getSatellitesAbove } from "@/services/n2yo";
 import { getOpenMeteoWeather } from "@/services/open-meteo";
 import { getMoonPhase, getMoonPosition, getSunriseSunset } from "@/services/suncalc";
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 
   const payload = await memoize(cacheKey, 300, async () => {
     const [iss, satellites, weather, kpHistory] = await Promise.all([
-      getISSPosition(),
+      getISSPosition().catch(() => ({ latitude: lat, longitude: lon, altitude: 400, timestamp: Date.now() })),
       getSatellitesAbove(lat, lon),
       getOpenMeteoWeather(lat, lon),
       getSwpcKpIndex().catch(() => []),
@@ -37,8 +37,8 @@ export async function GET(request: Request) {
       location: { latitude: lat, longitude: lon },
       iss: {
         timestamp: iss.timestamp,
-        latitude: Number(iss.iss_position.latitude),
-        longitude: Number(iss.iss_position.longitude),
+        latitude: iss.latitude,
+        longitude: iss.longitude,
       },
       satellites: satellites.above.map((sat) => ({
         id: sat.satid,
