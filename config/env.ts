@@ -13,7 +13,7 @@ export const env = envSchema.parse({
   N2YO_API_KEY: process.env.N2YO_API_KEY ?? "",
   NASA_API_KEY: process.env.NASA_API_KEY ?? "",
   GROQ_API_KEY: process.env.GROQ_API_KEY ?? "",
-  REDIS_URL: process.env.REDIS_URL,
-  REDIS_TOKEN: process.env.REDIS_TOKEN,
+  REDIS_URL: process.env.REDIS_URL?.trim() ? process.env.REDIS_URL : undefined,
+  REDIS_TOKEN: process.env.REDIS_TOKEN?.trim() ? process.env.REDIS_TOKEN : undefined,
   NEXT_PUBLIC_CESIUM_BASE_URL: process.env.NEXT_PUBLIC_CESIUM_BASE_URL,
 });

@@ -11,7 +11,7 @@ export async function GET() {
     ]);
 
     const issGroup =
-      stations.status === "fulfilled" ? stations.value.slice(0, 1) : [];
+      stations.status === "fulfilled" ? stations.value.slice(0, 20) : [];
     const starlinkGroup =
       starlink.status === "fulfilled" ? starlink.value.slice(0, 40) : [];
     // From active, take a diverse sample (GPS, science, weather)

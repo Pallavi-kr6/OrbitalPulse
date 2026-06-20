@@ -17,7 +17,7 @@ export default function Navbar() {
         {/* Navigation Items */}
         <div className="hidden md:flex items-center gap-8">
           <Link
-            href="#globe"
+            href="/globe"
             className="text-xs font-semibold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors"
           >
             Live Globe
@@ -35,7 +35,7 @@ export default function Navbar() {
             ISS Compass
           </Link>
           <Link
-            href="#explorer"
+            href="/explorer"
             className="text-xs font-semibold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors"
           >
             Satellite Explorer

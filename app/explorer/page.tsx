@@ -1,0 +1,185 @@
+"use client";
+
+import { useMemo, useState, useCallback, useEffect } from "react";
+import { ArrowLeft, Search, Satellite, Globe, Filter } from "lucide-react";
+import Link from "next/link";
+import { useLocationStore } from "@/store/useLocationStore";
+import { useTLEs } from "@/hooks/useTLEs";
+import OrbitalGlobe from "@/app/dashboard/components/OrbitalGlobe";
+import SatelliteDetailsDrawer from "@/app/dashboard/components/SatelliteDetailsDrawer";
+import SatelliteSearch from "@/app/explorer/components/SatelliteSearch";
+import SatelliteFilters from "@/app/explorer/components/SatelliteFilters";
+import SatelliteList from "@/app/explorer/components/SatelliteList";
+import type { ParsedSatellite } from "@/app/dashboard/components/OrbitalGlobe";
+import { useSatelliteStore } from "@/store/useSatelliteStore";
+
+const filterOptions = [
+  { label: "All", value: "all" },
+  { label: "ISS", value: "iss" },
+  { label: "Stations", value: "stations" },
+  { label: "Starlink", value: "starlink" },
+  { label: "Active Satellites", value: "active" },
+] as const;
+
+type FilterValue = (typeof filterOptions)[number]["value"];
+
+type ExplorerSatellite = ParsedSatellite;
+
+export default function ExplorerPage() {
+  const { latitude, longitude } = useLocationStore();
+  const [searchInput, setSearchInput] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState<FilterValue>("all");
+
+  const selectedSatellite = useSatelliteStore((s) => s.selectedSatellite);
+  const setSelectedSatellite = useSatelliteStore((s) => s.setSelectedSatellite);
+  const trackedSatIdStore = useSatelliteStore((s) => s.trackedSatId);
+  const setTrackedSatId = useSatelliteStore((s) => s.setTrackedSatId);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setSearchTerm(searchInput.trim()), 300);
+    return () => window.clearTimeout(timeout);
+  }, [searchInput]);
+
+  const tlesQuery = useTLEs();
+
+  const tles = tlesQuery.data?.tles ?? [];
+
+  const filteredTles = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+
+    return tles.filter((tle) => {
+      const name = tle.name.toLowerCase();
+      const norad = tle.line1.slice(2, 7).trim();
+      const matchesSearch = !term || name.includes(term) || norad.includes(term);
+
+      if (!matchesSearch) return false;
+      if (filter === "all") return true;
+      if (filter === "iss") return /ISS|ZARYA/i.test(tle.name);
+      if (filter === "stations") return /ISS|HST|TIANGONG|LUCH/i.test(tle.name);
+      if (filter === "starlink") return /STARLINK/i.test(tle.name);
+      if (filter === "active") return true;
+      return true;
+    });
+  }, [searchTerm, filter, tles]);
+
+  const visibleSatellites = useMemo(() => {
+    return filteredTles.map((tle) => {
+      const noradId = tle.line1.slice(2, 7).trim();
+      return {
+        id: Number(noradId) || 0,
+        name: tle.name.trim(),
+        latitude: 0,
+        longitude: 0,
+        altitudeKm: 0,
+        noradId,
+        lat: 0,
+        lon: 0,
+        altKm: 0,
+        color: "#60a5fa",
+        orbitType: "LEO",
+        visible: true,
+      } as ExplorerSatellite;
+    });
+  }, [filteredTles]);
+
+  const handleSelectSatellite = useCallback((sat: ExplorerSatellite) => {
+    setSelectedSatellite({
+      id: sat.noradId ?? sat.name,
+      name: sat.name,
+      noradId: sat.noradId,
+      lat: sat.lat,
+      lon: sat.lon,
+      altKm: sat.altKm,
+      orbitType: sat.orbitType,
+      visible: sat.visible,
+      color: sat.color,
+    });
+  }, [setSelectedSatellite]);
+
+  const handleSelectSatelliteFromList = useCallback(
+    (sat: ExplorerSatellite) => {
+      setSelectedSatellite({
+        id: sat.noradId ?? sat.id,
+        name: sat.name,
+        noradId: sat.noradId,
+        lat: sat.lat,
+        lon: sat.lon,
+        altKm: sat.altKm,
+        orbitType: sat.orbitType,
+        visible: sat.visible,
+        color: sat.color,
+      });
+      setTrackedSatId(sat.noradId ?? String(sat.id));
+    },
+    [setSelectedSatellite, setTrackedSatId]
+  );
+
+  const handleTrack = useCallback((name: string) => {
+    setTrackedSatId(name);
+  }, [setTrackedSatId]);
+
+  const searchLabel = useMemo(() => "Search satellites by name or NORAD ID", []);
+
+  return (
+    <div className="min-h-screen bg-[#020617] text-white">
+      <div className="sticky top-0 z-40 border-b border-white/10 bg-[#020617]/95 backdrop-blur-lg">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+          <Link href="/" className="inline-flex items-center gap-2 text-sm text-sky-300 hover:text-white">
+            <ArrowLeft className="h-4 w-4" /> Back to Home
+          </Link>
+          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.32em] text-slate-400">
+            <Globe className="h-4 w-4 text-sky-400" /> Satellite Explorer
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl grid-cols-12 gap-4 px-4 py-6 lg:py-8">
+        <aside className="col-span-12 lg:col-span-3 space-y-4">
+          <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-5 shadow-xl shadow-slate-950/20 backdrop-blur-xl">
+            <div className="flex items-center gap-2 text-sm font-semibold tracking-wide text-sky-300">
+              <Search className="h-4 w-4" /> Search
+            </div>
+            <SatelliteSearch label={searchLabel} value={searchInput} onChange={setSearchInput} />
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-5 shadow-xl shadow-slate-950/20 backdrop-blur-xl">
+            <div className="flex items-center gap-2 text-sm font-semibold tracking-wide text-sky-300">
+              <Filter className="h-4 w-4" /> Filters
+            </div>
+            <SatelliteFilters options={filterOptions} value={filter} onChange={setFilter} />
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-5 shadow-xl shadow-slate-950/20 backdrop-blur-xl">
+            <div className="flex items-center gap-2 text-sm font-semibold tracking-wide text-sky-300">
+              <Satellite className="h-4 w-4" /> Satellite List
+            </div>
+            <SatelliteList
+              isLoading={tlesQuery.isLoading}
+              satellites={visibleSatellites}
+              onSelect={handleSelectSatelliteFromList}
+            />
+          </div>
+        </aside>
+
+        <main className="col-span-12 lg:col-span-6 rounded-3xl border border-white/10 bg-slate-950/50 p-4 shadow-xl shadow-slate-950/20 backdrop-blur-xl">
+          <OrbitalGlobe
+            tles={filteredTles}
+            onSatelliteClick={handleSelectSatellite}
+            trackedSatId={trackedSatIdStore ?? selectedSatellite?.name ?? null}
+            userLat={latitude ?? 28.6139}
+            userLon={longitude ?? 77.209}
+          />
+        </main>
+
+        <aside className="col-span-12 lg:col-span-3">
+          <SatelliteDetailsDrawer
+            satellite={selectedSatellite}
+            onClose={() => setSelectedSatellite(null)}
+            onTrack={handleTrack}
+          />
+        </aside>
+      </div>
+    </div>
+  );
+}
