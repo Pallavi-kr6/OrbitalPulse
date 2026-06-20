@@ -162,7 +162,7 @@ export default function ExplorerPage() {
           </div>
         </aside>
 
-        <main className="col-span-12 lg:col-span-6 rounded-3xl border border-white/10 bg-slate-950/50 p-4 shadow-xl shadow-slate-950/20 backdrop-blur-xl">
+        <main className="col-span-12 lg:col-span-6 rounded-3xl border border-white/10 bg-slate-950/50 p-4 shadow-xl shadow-slate-950/20 backdrop-blur-xl flex items-center justify-center">
           <OrbitalGlobe
             tles={filteredTles}
             onSatelliteClick={handleSelectSatellite}
