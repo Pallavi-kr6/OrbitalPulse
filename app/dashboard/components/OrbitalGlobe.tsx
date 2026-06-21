@@ -22,6 +22,7 @@ export interface ParsedSatellite {
 interface OrbitalGlobeProps {
   tles: CelesTrakTle[];
   onSatelliteClick?: (sat: ParsedSatellite) => void;
+  onSatelliteHover?: (sat: ParsedSatellite | null) => void;
   trackedSatId?: string | null;
   userLat?: number | null;
   userLon?: number | null;
@@ -86,6 +87,7 @@ function getSunDirection(date: Date): [number, number, number] {
 export default function OrbitalGlobe({
   tles,
   onSatelliteClick,
+  onSatelliteHover,
   trackedSatId,
   userLat,
   userLon,
@@ -437,11 +439,20 @@ export default function OrbitalGlobe({
       const hit = parsedSatsRef.current.find(
         (s) => s.visible && Math.hypot(s.screenX - mx, s.screenY - my) < 14
       );
+      
+      const prevHovered = hoveredRef.current;
       hoveredRef.current = hit?.name ?? null;
+
       if (hit) {
         setTooltip({ name: hit.name, x: e.clientX - rect.left, y: e.clientY - rect.top });
+        if (prevHovered !== hit.name && onSatelliteHover) {
+          onSatelliteHover(hit);
+        }
       } else {
         setTooltip(null);
+        if (prevHovered !== null && onSatelliteHover) {
+          onSatelliteHover(null);
+        }
       }
     }
   };
@@ -468,7 +479,15 @@ export default function OrbitalGlobe({
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
-        onMouseLeave={() => { onMouseUp(); setTooltip(null); hoveredRef.current = null; }}
+        onMouseLeave={() => {
+          onMouseUp();
+          setTooltip(null);
+          const prev = hoveredRef.current;
+          hoveredRef.current = null;
+          if (prev !== null && onSatelliteHover) {
+            onSatelliteHover(null);
+          }
+        }}
         onClick={onClick}
       />
 

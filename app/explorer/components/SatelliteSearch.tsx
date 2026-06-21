@@ -20,7 +20,7 @@ export default function SatelliteSearch({ label, value, onChange }: SatelliteSea
         type="search"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Search name or NORAD ID"
+        placeholder="Search name or NORAD ID "
         className="mt-3 w-full rounded-2xl border border-white/10 bg-slate-950/90 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
       />
     </div>

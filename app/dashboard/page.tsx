@@ -37,9 +37,6 @@ export default function DashboardPage() {
   const narrator = useNarration();
   const aiNarrator = useAINarrator(latitude ?? 28.6139, longitude ?? 77.209);
 
-  // prevent spam speech
-  const spoken = useRef<Set<string>>(new Set());
-
   // -----------------------------
   // DATA HOOKS (keep ABOVE effects)
   // -----------------------------
@@ -86,40 +83,34 @@ export default function DashboardPage() {
   // 🎙️ GLOBAL INTRO (AUTO SPEAK)
   // -----------------------------
   useEffect(() => {
-    if (spoken.current.has("intro")) return;
-
-    narrator.speakPriority(
-      "Welcome to Orbital Pulse. I am your AI sky guide. I will describe everything you see in real time — satellites, weather, and space activity above you."
+    narrator.speakOnce(
+      "dashboard_intro",
+      "Welcome to Orbital Pulse. I am your AI sky guide. I will describe everything you see in real time — satellites, weather, and space activity above you.",
+      true
     );
-
-    spoken.current.add("intro");
-  }, []);
+  }, [narrator]);
 
   // -----------------------------
   // 🎙️ LOADING NARRATION FLOW
   // -----------------------------
   useEffect(() => {
-    if (geoLoading && !spoken.current.has("geo")) {
-      narrator.speak("Acquiring your location to map the sky above you.");
-      spoken.current.add("geo");
+    if (geoLoading) {
+      narrator.speakOnce("dashboard_geo", "Acquiring your location to map the sky above you.");
       return;
     }
 
-    if (iss.isLoading && !spoken.current.has("iss")) {
-      narrator.speak("Tracking satellites currently passing above your region.");
-      spoken.current.add("iss");
+    if (iss.isLoading) {
+      narrator.speakOnce("dashboard_iss", "Tracking satellites currently passing above your region.");
     }
 
-    if (skyScore.isLoading && !spoken.current.has("sky")) {
-      narrator.speak("Analyzing sky clarity, cloud cover, and visibility conditions.");
-      spoken.current.add("sky");
+    if (skyScore.isLoading) {
+      narrator.speakOnce("dashboard_sky", "Analyzing sky clarity, cloud cover, and visibility conditions.");
     }
 
-    if (spaceWeather.isLoading && !spoken.current.has("space")) {
-      narrator.speak("Checking solar activity and space weather conditions.");
-      spoken.current.add("space");
+    if (spaceWeather.isLoading) {
+      narrator.speakOnce("dashboard_space", "Checking solar activity and space weather conditions.");
     }
-  }, [geoLoading, iss.isLoading, skyScore.isLoading, spaceWeather.isLoading]);
+  }, [geoLoading, iss.isLoading, skyScore.isLoading, spaceWeather.isLoading, narrator]);
 
   // -----------------------------
   // 🎙️ FINAL SUMMARY NARRATION
@@ -132,12 +123,10 @@ export default function DashboardPage() {
       !spaceWeather.isLoading &&
       !tles.isLoading;
 
-    if (!allLoaded || spoken.current.has("summary")) return;
-
-    spoken.current.add("summary");
+    if (!allLoaded) return;
 
     if (aiNarrator?.data?.summary) {
-      narrator.speakPriority(aiNarrator.data.summary);
+      narrator.speakOnce("dashboard_summary", aiNarrator.data.summary, true);
       return;
     }
 
@@ -163,7 +152,7 @@ export default function DashboardPage() {
 
     summary += ` Current solar activity level is Kp index ${kp}.`;
 
-    narrator.speakPriority(summary);
+    narrator.speakOnce("dashboard_summary", summary, true);
   }, [
     geoLoading,
     iss.isLoading,
@@ -171,6 +160,7 @@ export default function DashboardPage() {
     spaceWeather.isLoading,
     tles.isLoading,
     aiNarrator.data,
+    narrator
   ]);
 
   // -----------------------------

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { ArrowLeft, Search, Satellite, Globe, Filter } from "lucide-react";
 import Link from "next/link";
 import { useLocationStore } from "@/store/useLocationStore";
@@ -14,6 +14,7 @@ import type { ParsedSatellite } from "@/app/dashboard/components/OrbitalGlobe";
 import { useSatelliteStore } from "@/store/useSatelliteStore";
 import type { SelectedSatellite } from "@/store/useSatelliteStore";
 import * as satellite from "satellite.js";
+import { useNarration } from "@/lib/hooks/useNarration";
 
 const filterOptions = [
   { label: "All", value: "all" },
@@ -34,6 +35,12 @@ type ExplorerSatellite = SelectedSatellite & {
 
 export default function ExplorerPage() {
   const { latitude, longitude } = useLocationStore();
+  const narrator = useNarration();
+  const lastSpokenHoverRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    narrator.speakOnce("explorer_intro", "Scanning orbital objects above your location.", true);
+  }, [narrator]);
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<FilterValue>("all");
@@ -142,6 +149,27 @@ export default function ExplorerPage() {
     });
   }, [filteredSats, now]);
 
+  const handleSatelliteHover = useCallback((sat: ParsedSatellite | null) => {
+    if (!sat) {
+      lastSpokenHoverRef.current = null;
+      return;
+    }
+
+    if (lastSpokenHoverRef.current === sat.name) return;
+    lastSpokenHoverRef.current = sat.name;
+
+    const isIss = /ISS|ZARYA/i.test(sat.name);
+    const orbitTypeDesc = sat.orbitType === "LEO" ? "low Earth" : 
+                          sat.orbitType === "MEO" ? "medium Earth" : 
+                          sat.orbitType === "GEO" ? "geostationary" : "high Earth";
+
+    if (isIss) {
+      narrator.speakPriority("This is the ISS, currently passing over low Earth orbit.");
+    } else {
+      narrator.speakPriority(`This is the ${sat.name}, currently passing over ${orbitTypeDesc} orbit.`);
+    }
+  }, [narrator]);
+
   const handleSelectSatellite = useCallback((sat: ParsedSatellite) => {
     setSelectedSatellite({
       id: sat.noradId ?? sat.name,
@@ -154,7 +182,8 @@ export default function ExplorerPage() {
       visible: sat.visible,
       color: sat.color,
     });
-  }, [setSelectedSatellite]);
+    narrator.speakPriority(`Tracking initiated for ${sat.name} constellation satellite.`);
+  }, [setSelectedSatellite, narrator]);
 
   const handleSelectSatelliteFromList = useCallback(
     (sat: any) => {
@@ -170,8 +199,9 @@ export default function ExplorerPage() {
         color: sat.color,
       });
       setTrackedSatId(sat.noradId ?? String(sat.id));
+      narrator.speakPriority(`Tracking initiated for ${sat.name} constellation satellite.`);
     },
-    [setSelectedSatellite, setTrackedSatId]
+    [setSelectedSatellite, setTrackedSatId, narrator]
   );
 
   const handleTrack = useCallback((name: string) => {
@@ -225,6 +255,7 @@ export default function ExplorerPage() {
           <OrbitalGlobe
             tles={filteredTles}
             onSatelliteClick={handleSelectSatellite}
+            onSatelliteHover={handleSatelliteHover}
             trackedSatId={trackedSatIdStore ?? selectedSatellite?.name ?? null}
             userLat={latitude ?? 28.6139}
             userLon={longitude ?? 77.209}
