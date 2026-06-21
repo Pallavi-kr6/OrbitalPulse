@@ -17,6 +17,8 @@ const tleSchema = z.array(
   }),
 );
 
+const CELESTRAK_GP_UPDATE_INTERVAL_SECONDS = 2 * 60 * 60;
+
 export async function getTleByGroup(
   groupName = "active",
 ): Promise<CelesTrakTle[]> {
@@ -30,7 +32,7 @@ export async function getTleByGroup(
 
   const cacheKey = `celestrak-tle-${groupName}`;
 
-  const request = memoize(cacheKey, 3600, async () => {
+  const request = memoize(cacheKey, CELESTRAK_GP_UPDATE_INTERVAL_SECONDS, async () => {
     const url =
       `https://celestrak.org/NORAD/elements/gp.php?GROUP=${encodeURIComponent(groupName)}&FORMAT=tle`;
 
