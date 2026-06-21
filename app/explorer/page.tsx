@@ -13,6 +13,7 @@ import SatelliteList from "@/app/explorer/components/SatelliteList";
 import type { ParsedSatellite } from "@/app/dashboard/components/OrbitalGlobe";
 import { useSatelliteStore } from "@/store/useSatelliteStore";
 import type { SelectedSatellite } from "@/store/useSatelliteStore";
+import * as satellite from "satellite.js";
 
 const filterOptions = [
   { label: "All", value: "all" },
@@ -48,13 +49,38 @@ export default function ExplorerPage() {
   }, [searchInput]);
 
   const tlesQuery = useTLEs();
-
   const tles = tlesQuery.data?.tles ?? [];
 
-  const filteredTles = useMemo(() => {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(new Date());
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Parse TLEs into satrec objects once
+  const parsedSatrecs = useMemo(() => {
+    return tles.map((tle) => {
+      const noradId = tle.line1.slice(2, 7).trim();
+      try {
+        const satrec = satellite.twoline2satrec(tle.line1, tle.line2);
+        return {
+          tle,
+          noradId,
+          satrec,
+        };
+      } catch {
+        return null;
+      }
+    }).filter((s): s is NonNullable<typeof s> => s !== null);
+  }, [tles]);
+
+  const filteredSats = useMemo(() => {
     const term = searchTerm.toLowerCase();
 
-    return tles.filter((tle) => {
+    return parsedSatrecs.filter(({ tle }) => {
       const name = tle.name.toLowerCase();
       const norad = tle.line1.slice(2, 7).trim();
       const matchesSearch = !term || name.includes(term) || norad.includes(term);
@@ -67,27 +93,54 @@ export default function ExplorerPage() {
       if (filter === "active") return true;
       return true;
     });
-  }, [searchTerm, filter, tles]);
+  }, [searchTerm, filter, parsedSatrecs]);
+
+  const filteredTles = useMemo(() => {
+    return filteredSats.map((s) => s.tle);
+  }, [filteredSats]);
 
   const visibleSatellites = useMemo(() => {
-    return filteredTles.map((tle) => {
-      const noradId = tle.line1.slice(2, 7).trim();
+    const gmst = satellite.gstime(now);
+    return filteredSats.map(({ tle, noradId, satrec }) => {
+      let lat = 0;
+      let lon = 0;
+      let altKm = 0;
+      let velocityKms = 0;
+
+      try {
+        const pv = satellite.propagate(satrec, now);
+        const pos = pv.position;
+        const vel = pv.velocity;
+
+        if (pos && typeof pos !== "boolean") {
+          const geo = satellite.eciToGeodetic(pos, gmst);
+          lat = satellite.degreesLat(geo.latitude);
+          lon = satellite.degreesLong(geo.longitude);
+          altKm = geo.height;
+        }
+
+        if (vel && typeof vel !== "boolean") {
+          velocityKms = Math.sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z);
+        }
+      } catch {}
+
       return {
         id: Number(noradId) || 0,
         name: tle.name.trim(),
-        latitude: 0,
-        longitude: 0,
-        altitudeKm: 0,
+        latitude: lat,
+        longitude: lon,
+        altitudeKm: altKm,
+        velocityKms,
         noradId,
-        lat: 0,
-        lon: 0,
-        altKm: 0,
+        lat,
+        lon,
+        altKm,
         color: "#60a5fa",
         orbitType: "LEO" as const,
         visible: true,
       } as ExplorerSatellite;
     });
-  }, [filteredTles]);
+  }, [filteredSats, now]);
 
   const handleSelectSatellite = useCallback((sat: ParsedSatellite) => {
     setSelectedSatellite({

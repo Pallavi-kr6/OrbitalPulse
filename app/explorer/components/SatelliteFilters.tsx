@@ -3,14 +3,14 @@
 import { useMemo } from "react";
 
 interface FilterOption {
-  label: string;
-  value: string;
+  readonly label: string;
+  readonly value: string;
 }
 
 interface SatelliteFiltersProps {
-  options: FilterOption[];
+  options: readonly FilterOption[];
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: any) => void;
 }
 
 export default function SatelliteFilters({ options, value, onChange }: SatelliteFiltersProps) {

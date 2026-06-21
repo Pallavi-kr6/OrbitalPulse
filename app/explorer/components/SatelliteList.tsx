@@ -9,6 +9,7 @@ interface SatelliteListItem {
   latitude: number;
   longitude: number;
   altitudeKm: number;
+  velocityKms?: number;
 }
 
 interface SatelliteListProps {
@@ -56,7 +57,7 @@ function SatelliteListComponent({ satellites, isLoading, onSelect }: SatelliteLi
             <div>Lat: {satellite.latitude.toFixed(1)}°</div>
             <div>Lon: {satellite.longitude.toFixed(1)}°</div>
             <div>Alt: {satellite.altitudeKm.toFixed(0)} km</div>
-            <div>Vel: {satellite.altitudeKm ? "—" : "—"}</div>
+            <div>Vel: {satellite.velocityKms ? `${satellite.velocityKms.toFixed(1)} km/s` : "—"}</div>
           </div>
         </button>
       ))}
