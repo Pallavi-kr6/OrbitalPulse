@@ -12,6 +12,7 @@ import SatelliteFilters from "@/app/explorer/components/SatelliteFilters";
 import SatelliteList from "@/app/explorer/components/SatelliteList";
 import type { ParsedSatellite } from "@/app/dashboard/components/OrbitalGlobe";
 import { useSatelliteStore } from "@/store/useSatelliteStore";
+import type { SelectedSatellite } from "@/store/useSatelliteStore";
 
 const filterOptions = [
   { label: "All", value: "all" },
@@ -23,7 +24,12 @@ const filterOptions = [
 
 type FilterValue = (typeof filterOptions)[number]["value"];
 
-type ExplorerSatellite = ParsedSatellite;
+type ExplorerSatellite = SelectedSatellite & {
+  id: number;
+  latitude: number;
+  longitude: number;
+  altitudeKm: number;
+};
 
 export default function ExplorerPage() {
   const { latitude, longitude } = useLocationStore();
@@ -77,13 +83,13 @@ export default function ExplorerPage() {
         lon: 0,
         altKm: 0,
         color: "#60a5fa",
-        orbitType: "LEO",
+        orbitType: "LEO" as const,
         visible: true,
       } as ExplorerSatellite;
     });
   }, [filteredTles]);
 
-  const handleSelectSatellite = useCallback((sat: ExplorerSatellite) => {
+  const handleSelectSatellite = useCallback((sat: ParsedSatellite) => {
     setSelectedSatellite({
       id: sat.noradId ?? sat.name,
       name: sat.name,
@@ -98,7 +104,7 @@ export default function ExplorerPage() {
   }, [setSelectedSatellite]);
 
   const handleSelectSatelliteFromList = useCallback(
-    (sat: ExplorerSatellite) => {
+    (sat: any) => {
       setSelectedSatellite({
         id: sat.noradId ?? sat.id,
         name: sat.name,
@@ -162,7 +168,7 @@ export default function ExplorerPage() {
           </div>
         </aside>
 
-        <main className="col-span-12 lg:col-span-6 rounded-3xl border border-white/10 bg-slate-950/50 p-4 shadow-xl shadow-slate-950/20 backdrop-blur-xl flex items-center justify-center">
+        <main className="col-span-12 lg:col-span-6 rounded-3xl border border-white/10 bg-slate-950/50 p-4 shadow-xl shadow-slate-950/20 backdrop-blur-xl flex items-center justify-center h-[500px] lg:h-[650px] relative">
           <OrbitalGlobe
             tles={filteredTles}
             onSatelliteClick={handleSelectSatellite}

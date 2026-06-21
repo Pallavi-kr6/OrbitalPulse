@@ -90,6 +90,7 @@ export default function OrbitalGlobe({
   userLat,
   userLon,
 }: OrbitalGlobeProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const rotYRef = useRef(0.5);
@@ -399,16 +400,17 @@ export default function OrbitalGlobe({
 
   // Canvas resize
   useEffect(() => {
+    const container = containerRef.current;
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!container || !canvas) return;
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = canvas.offsetWidth * dpr;
-      canvas.height = canvas.offsetHeight * dpr;
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = container.clientHeight * dpr;
     };
     resize();
     const ro = new ResizeObserver(resize);
-    ro.observe(canvas);
+    ro.observe(container);
     return () => ro.disconnect();
   }, []);
 
@@ -459,10 +461,10 @@ export default function OrbitalGlobe({
   };
 
   return (
-    <div className="relative w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full">
       <canvas
         ref={canvasRef}
-        className="w-full h-full cursor-grab active:cursor-grabbing"
+        className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
