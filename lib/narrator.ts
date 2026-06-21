@@ -1,4 +1,4 @@
-type QueueItem = { text: string; priority: boolean };
+type QueueItem = { text: string; priority: boolean; pauseMs?: number };
 
 class Narrator {
   private static instance: Narrator;
@@ -55,6 +55,16 @@ class Narrator {
     if (!next) return;
 
     this.speaking = true;
+
+    // Handle cinematic pause
+    if (next.text === '' && next.pauseMs) {
+      setTimeout(() => {
+        this.speaking = false;
+        this.dequeue();
+      }, next.pauseMs);
+      return;
+    }
+
     const utter = new SpeechSynthesisUtterance(next.text);
     utter.rate = 0.9;
     utter.pitch = 0.95;
@@ -100,12 +110,12 @@ class Narrator {
     window.speechSynthesis.speak(utter);
   }
 
-  private enqueue(text: string, priority: boolean = false) {
+  private enqueue(text: string, priority: boolean = false, pauseMs?: number) {
     if (!this.isSupported) {
-      console.log('[Narrator]', text);
+      if (text) console.log('[Narrator]', text);
       return;
     }
-    const item: QueueItem = { text, priority };
+    const item: QueueItem = { text, priority, pauseMs };
     if (priority) {
       this.queue.unshift(item);
     } else {
@@ -132,6 +142,10 @@ class Narrator {
     if (this.spokenEvents.has(eventId)) return;
     this.spokenEvents.add(eventId);
     this.enqueue(text, priority);
+  }
+
+  pause(ms: number) {
+    this.enqueue('', false, ms);
   }
 
   mute() {

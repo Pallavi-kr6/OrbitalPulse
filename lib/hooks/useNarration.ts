@@ -27,6 +27,10 @@ export function useNarration() {
     narrator.speakOnce(eventId, text, priority);
   }, []);
 
+  const pause = useCallback((ms: number) => {
+    narrator.pause(ms);
+  }, []);
+
   const announcePage = useCallback((pageId: string) => {
     narrator.announcePage(pageId);
   }, []);
@@ -54,6 +58,7 @@ export function useNarration() {
     speak,
     speakPriority,
     speakOnce,
+    pause,
     announcePage,
     announceEvent,
   } as const;

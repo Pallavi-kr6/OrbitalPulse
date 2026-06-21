@@ -13,6 +13,7 @@ import {
   Info,
   X,
 } from "lucide-react";
+import { useMissionNarration } from "@/lib/hooks/useMissionNarration";
 
 // ─── Satellite TLE data (real representative TLEs) ───────────────────────────
 const SAMPLE_TLES = [
@@ -152,6 +153,14 @@ export default function GlobePage() {
     online: 5,
     fps: 60,
   });
+
+  const missionNarration = useMissionNarration();
+
+  useEffect(() => {
+    // Hardcoded KP-Index is 4 in the UI telemetry panel
+    missionNarration.narrateSpaceWeather(4);
+    missionNarration.playIntroSequence();
+  }, [missionNarration]);
 
   const drawGlobe = useCallback(() => {
     const canvas = canvasRef.current;
@@ -500,6 +509,9 @@ export default function GlobePage() {
       (s) => s.visible && Math.hypot(s.screenX - mx, s.screenY - my) < 20
     );
     setSelectedSat(clicked || null);
+    if (clicked) {
+      missionNarration.narrateSatellite(clicked);
+    }
   };
 
   return (
