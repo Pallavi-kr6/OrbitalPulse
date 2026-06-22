@@ -14,8 +14,9 @@
     "astronomy-engine": "^2.1.19",
     "cesium": "^1.110.0",
     "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
     "framer-motion": "^12.40.0",
-    "lucide-react": "^1.20.0",
+    "lucide-react": "^1.21.0",
     "next": "16.2.9",
     "ogl": "^1.0.11",
     "react": "19.2.4",
@@ -25,17 +26,19 @@
     "suncalc": "^1.9.0",
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "zustand": "^5.0.14",
-    "zod": "^3.23.2"
+    "zod": "^3.23.2",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.3.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.5.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
-    "tailwindcss": "^4",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.1",
     "typescript": "^5"
   }
 }

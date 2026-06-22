@@ -22,18 +22,8 @@ export default function Navbar() {
           >
             Live Globe
           </Link>
-          <Link
-            href="#weather"
-            className="text-xs font-semibold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors"
-          >
-            Solar Weather
-          </Link>
-          <Link
-            href="#compass"
-            className="text-xs font-semibold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors"
-          >
-            ISS Compass
-          </Link>
+      
+          
           <Link
             href="/explorer"
             className="text-xs font-semibold uppercase tracking-widest text-zinc-400 hover:text-white transition-colors"
@@ -43,11 +33,7 @@ export default function Navbar() {
         </div>
 
         {/* Action Button */}
-        <div>
-          <Button variant="glass" className="rounded-full text-xs font-bold uppercase tracking-wider px-5 py-2">
-            Initialize Scan
-          </Button>
-        </div>
+       
       </nav>
     </header>
   );

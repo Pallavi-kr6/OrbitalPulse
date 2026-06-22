@@ -77,16 +77,7 @@ export default function Hero() {
               Scan My Sky
             </Button>
           </Link>
-          <Link href="/globe" className="w-full sm:w-auto">
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full sm:w-auto rounded-full font-bold uppercase tracking-widest text-xs px-8 py-6 gap-2 border-white/20 hover:border-white/40 hover:bg-white/5 backdrop-blur-md cursor-pointer"
-            >
-              <Globe className="h-4 w-4" />
-              Explore Demo
-            </Button>
-          </Link>
+       
         </motion.div>
       </div>
 

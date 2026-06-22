@@ -5,7 +5,7 @@ import { getISSPosition } from "@/lib/satellites/issTracker";
 import { getSatellitesAbove } from "@/services/n2yo";
 import { getOpenMeteoWeather } from "@/services/open-meteo";
 import { getMoonPhase } from "@/services/suncalc";
-import { getSwpcKpIndex } from "@/lib/weather/noaaClient";
+import { getSpaceWeather } from "@/services/space-weather";
 import { requestGroqNarration } from "@/lib/ai/groqClient";
 import { logger } from "@/lib/logger";
 
@@ -19,15 +19,15 @@ export async function GET(request: Request) {
     const cacheKey = `ai-narration:${lat}:${lon}`;
 
     const narration = await memoize(cacheKey, 300, async () => {
-      const [iss, satellites, weather, kpHistory] = await Promise.all([
+      const [iss, satellites, weather, spaceWeather] = await Promise.all([
         getISSPosition().catch(() => ({ latitude: 0, longitude: 0 })),
         getSatellitesAbove(lat, lon).catch(() => ({ above: [] })),
         getOpenMeteoWeather(lat, lon),
-        getSwpcKpIndex().catch(() => []),
+        getSpaceWeather().catch(() => null),
       ]);
 
       const moon = getMoonPhase(new Date());
-      const latestKp = kpHistory.length ? kpHistory[kpHistory.length - 1].kp_index : 0;
+      const latestKp = spaceWeather?.kpIndex ?? 0;
       const score = Math.round(
         10 * (clamp(1 - weather.hourly.cloudcover[0] / 100) * 0.3 + clamp(weather.hourly.visibility[0] / 20) * 0.2 + clamp(1 - moon.illuminated) * 0.2 + 0.85 * 0.15 + clamp(1 - latestKp / 9) * 0.15),
       );
@@ -39,14 +39,19 @@ export async function GET(request: Request) {
           longitude: String(iss.longitude),
         },
         solarActivityScore: score,
-        kpIndex: latestKp,
         moonPhase: moon.phaseName,
         illumination: Math.round(moon.illuminated * 100),
         cloudCover: weather.hourly.cloudcover[0],
         visibility: weather.hourly.visibility[0],
+        spaceWeather: spaceWeather ? {
+          flareClass: spaceWeather.flareClass,
+          kpIndex: spaceWeather.kpIndex,
+          cmeDetected: spaceWeather.cmeDetected,
+          auroraLevel: spaceWeather.auroraLevel
+        } : null
       };
 
-      const systemPrompt = `You are an expert astronomy guide. Explain current sky conditions for the user's location. Output ONLY valid JSON matching this schema: { "summary": "string", "visibility": "string", "bestTime": "string", "direction": "string" }`;
+      const systemPrompt = `You are an expert astronomy guide. Explain current sky conditions for the user's location. Explain how current solar activity affects sky observation. Maximum 2 sentences. Use plain language. Output ONLY valid JSON matching this schema: { "summary": "string", "visibility": "string", "bestTime": "string", "direction": "string" }`;
       return requestGroqNarration(payload, systemPrompt);
     });
 

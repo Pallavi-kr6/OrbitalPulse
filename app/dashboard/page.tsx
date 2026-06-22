@@ -12,7 +12,7 @@ import { useTLEs } from "@/hooks/useTLEs";
 
 import { motion } from "framer-motion";
 
-import SolarRibbon from "./components/SolarRibbon";
+import SolarRibbon from "@/components/space-weather/SolarRibbon";
 import OrbitalGlobe from "./components/OrbitalGlobe";
 import type { ParsedSatellite } from "./components/OrbitalGlobe";
 import SkyScoreCard from "./components/SkyScoreCard";
@@ -20,7 +20,7 @@ import ISSCompass from "./components/ISSCompass";
 import WeatherPanel from "./components/WeatherPanel";
 import SatelliteDetailsDrawer from "./components/SatelliteDetailsDrawer";
 import ObservationWindow from "./components/ObservationWindow";
-import SpaceWeatherPanel from "./components/SpaceWeatherPanel";
+import SpaceWeatherPanel from "@/components/space-weather/SpaceWeatherPanel";
 
 import { useNarration } from "@/lib/hooks/useNarration";
 import { useAINarrator } from "@/hooks/useAINarrator";
@@ -132,7 +132,7 @@ export default function DashboardPage() {
 
     const visibility = skyScore.data?.visibilityKm ?? 0;
     const cloud = skyScore.data?.cloudCover ?? 0;
-    const kp = spaceWeather.data?.latestKpIndex ?? 0;
+    const kp = spaceWeather.data?.kpIndex ?? 0;
     const nextPass = issData?.passes?.passes?.[0];
 
     let summary = `Sky scan complete. Visibility is ${visibility.toFixed(
@@ -273,13 +273,7 @@ export default function DashboardPage() {
           )}
 
           {rightTab === "space" && (
-            <SpaceWeatherPanel
-              kpIndex={spData?.latestKpIndex ?? 0}
-              flares={spData?.solarFlares ?? []}
-              cmes={spData?.coronalMassEjections ?? []}
-              storms={spData?.geomagneticStorms ?? []}
-              isLoading={spaceWeather.isLoading}
-            />
+            <SpaceWeatherPanel />
           )}
 
           <ISSCompass
