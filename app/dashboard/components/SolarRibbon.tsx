@@ -36,7 +36,7 @@ export default function SolarRibbon() {
   const trackRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
 
-  const kp: number = data?.latestKpIndex ?? 0;
+  const kp: number = data?.kpIndex ?? 0;
   const flares: { classType: string; beginTime: string }[] = data?.solarFlares ?? [];
   const cmes: { activityID: string; startTime: string }[] = data?.coronalMassEjections ?? [];
   const storms: { storm_strength: string; start_time: string }[] = data?.geomagneticStorms ?? [];
