@@ -2,17 +2,35 @@ import { useState, useEffect, useCallback } from 'react';
 import narrator from '@/lib/narrator';
 
 export function useNarration() {
-  const [isMuted, setIsMuted] = useState(() => narrator.getMuted());
-  const [isSupported, setIsSupported] = useState(() => narrator.getSupported());
+  const [state, setState] = useState({
+    isMuted: narrator.getMuted(),
+    isSupported: narrator.getSupported(),
+    isSpeaking: narrator.getSpeaking(),
+    isPaused: narrator.getPaused(),
+    currentText: narrator.getCurrentText(),
+  });
+
+  useEffect(() => {
+    const updateState = () => {
+      setState({
+        isMuted: narrator.getMuted(),
+        isSupported: narrator.getSupported(),
+        isSpeaking: narrator.getSpeaking(),
+        isPaused: narrator.getPaused(),
+        currentText: narrator.getCurrentText(),
+      });
+    };
+
+    updateState();
+    return narrator.subscribe(updateState);
+  }, []);
 
   const mute = useCallback(() => {
     narrator.mute();
-    setIsMuted(true);
   }, []);
 
   const unmute = useCallback(() => {
     narrator.unmute();
-    setIsMuted(false);
   }, []);
 
   const speak = useCallback((text: string) => {
@@ -31,6 +49,22 @@ export function useNarration() {
     narrator.pause(ms);
   }, []);
 
+  const pauseSpeech = useCallback(() => {
+    narrator.pauseSpeech();
+  }, []);
+
+  const resumeSpeech = useCallback(() => {
+    narrator.resumeSpeech();
+  }, []);
+
+  const stop = useCallback(() => {
+    narrator.stop();
+  }, []);
+
+  const replay = useCallback((pageId: string) => {
+    narrator.replay(pageId);
+  }, []);
+
   const announcePage = useCallback((pageId: string) => {
     narrator.announcePage(pageId);
   }, []);
@@ -39,7 +73,7 @@ export function useNarration() {
     narrator.announceEvent(event, priority);
   }, []);
 
-  // Pause narration when tab hidden (optional)
+  // Stop narration when tab hidden (optional)
   useEffect(() => {
     const handleVisibility = () => {
       if (document.hidden) {
@@ -51,14 +85,21 @@ export function useNarration() {
   }, []);
 
   return {
-    isMuted,
-    isSupported,
+    isMuted: state.isMuted,
+    isSupported: state.isSupported,
+    isSpeaking: state.isSpeaking,
+    isPaused: state.isPaused,
+    currentText: state.currentText,
     mute,
     unmute,
     speak,
     speakPriority,
     speakOnce,
     pause,
+    pauseSpeech,
+    resumeSpeech,
+    stop,
+    replay,
     announcePage,
     announceEvent,
   } as const;

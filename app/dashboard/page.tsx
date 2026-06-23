@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Globe, MapPin, Loader2 } from "lucide-react";
+import { ArrowLeft, Globe, MapPin, Loader2, Compass, Cloud, Sun } from "lucide-react";
 
 import { useLocationStore } from "@/store/useLocationStore";
 import { useSkyScore } from "@/hooks/useSkyScore";
@@ -83,11 +83,7 @@ export default function DashboardPage() {
   // 🎙️ GLOBAL INTRO (AUTO SPEAK)
   // -----------------------------
   useEffect(() => {
-    narrator.speakOnce(
-      "dashboard_intro",
-      "Welcome to Orbital Pulse. I am your AI sky guide. I will describe everything you see in real time — satellites, weather, and space activity above you.",
-      true
-    );
+    narrator.announcePage("dashboard");
   }, [narrator]);
 
   // -----------------------------
@@ -200,7 +196,7 @@ export default function DashboardPage() {
   const nextPass = issData?.passes?.passes?.[0] ?? null;
 
   return (
-    <div className="min-h-screen bg-[#030014] flex flex-col">
+    <div className="min-h-screen lg:h-screen lg:max-h-screen lg:overflow-hidden bg-[#030014] flex flex-col">
       <SolarRibbon />
 
       {/* HEADER */}
@@ -221,10 +217,9 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* MAIN */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden lg:h-0">
         {/* LEFT */}
-        <div className="flex-1 relative">
+        <div className="w-full h-[400px] sm:h-[500px] lg:h-auto lg:flex-1 relative border-b lg:border-b-0 lg:border-r border-white/5">
           <OrbitalGlobe
             tles={tles.data?.tles ?? []}
             onSatelliteClick={handleSatClick}
@@ -241,7 +236,33 @@ export default function DashboardPage() {
         </div>
 
         {/* RIGHT */}
-        <div className="w-full lg:w-[420px] border-l border-white/5 bg-black/30 flex flex-col">
+        <div className="w-full lg:w-[420px] bg-black/30 flex flex-col lg:overflow-y-auto">
+          {/* Tab Selector */}
+          <div className="flex border-b border-white/5 bg-black/20 p-1 gap-1">
+            {[
+              { id: "sky", label: "Sky Score", icon: Compass },
+              { id: "weather", label: "Weather", icon: Cloud },
+              { id: "space", label: "Space Weather", icon: Sun },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = rightTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setRightTab(tab.id as any)}
+                  className={`flex-1 py-2.5 px-1 flex items-center justify-center gap-1.5 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xl transition-all border ${
+                    isActive
+                      ? "bg-purple-500/10 border-purple-500/30 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.15)]"
+                      : "border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                  }`}
+                >
+                  <Icon className={`h-3.5 w-3.5 ${isActive ? "text-purple-400" : "text-zinc-600"}`} />
+                  <span className="hidden xs:inline">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
           <div className="p-2 text-xs text-purple-400 border-b border-white/5">
             ● Voice Narration Active
           </div>

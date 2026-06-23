@@ -52,7 +52,7 @@ export default function SatelliteDetailsDrawer({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: "100%", opacity: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="absolute right-0 top-0 bottom-0 w-80 bg-black/90 backdrop-blur-2xl border-l border-white/10 z-50 flex flex-col shadow-2xl overflow-y-auto"
+          className="fixed right-0 top-0 bottom-0 w-full sm:w-80 bg-black/95 backdrop-blur-3xl border-l border-white/10 z-[100] flex flex-col shadow-2xl overflow-y-auto"
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-white/8">

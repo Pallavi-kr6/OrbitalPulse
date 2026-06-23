@@ -39,7 +39,7 @@ export default function ExplorerPage() {
   const lastSpokenHoverRef = useRef<string | null>(null);
 
   useEffect(() => {
-    narrator.speakOnce("explorer_intro", "Scanning orbital objects above your location.", true);
+    narrator.announcePage("explorer");
   }, [narrator]);
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");

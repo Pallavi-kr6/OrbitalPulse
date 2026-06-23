@@ -501,6 +501,31 @@ export default function GlobePage() {
     setTimeout(() => { autoRotate.current = true; }, 3000);
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      isDragging.current = true;
+      autoRotate.current = false;
+      const touch = e.touches[0];
+      lastMouse.current = { x: touch.clientX, y: touch.clientY };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging.current || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - lastMouse.current.x;
+    const dy = touch.clientY - lastMouse.current.y;
+    rotYRef.current += dx * 0.005;
+    rotXRef.current += dy * 0.005;
+    rotXRef.current = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, rotXRef.current));
+    lastMouse.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = () => {
+    isDragging.current = false;
+    setTimeout(() => { autoRotate.current = true; }, 3000);
+  };
+
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect();
     const mx = (e.clientX - rect.left) * window.devicePixelRatio;
@@ -654,6 +679,9 @@ export default function GlobePage() {
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
               onClick={handleCanvasClick}
             />
 

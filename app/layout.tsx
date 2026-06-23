@@ -1,5 +1,6 @@
 import './globals.css';
 import { Providers } from './providers';
+import NarratorControls from './components/NarratorControls';
 
 export const metadata = {
   title: 'Orbital Pulse – The Living Sky OS',
@@ -20,7 +21,10 @@ export default function RootLayout({
     >
       <head />
       <body className="bg-[#030014] text-white min-h-screen antialiased selection:bg-purple-500/30">
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <NarratorControls />
+        </Providers>
       </body>
     </html>
   );

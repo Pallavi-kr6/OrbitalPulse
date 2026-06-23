@@ -458,6 +458,7 @@ export default function OrbitalGlobe({
   };
   const onMouseUp = () => {
     isDragging.current = false;
+    if (autoRotateTimer.current) clearTimeout(autoRotateTimer.current);
     autoRotateTimer.current = setTimeout(() => { autoRotate.current = true; }, 3500);
   };
   const onClick = (e: React.MouseEvent) => {
@@ -471,6 +472,32 @@ export default function OrbitalGlobe({
     if (hit && onSatelliteClick) onSatelliteClick(hit);
   };
 
+  // Touch handlers
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      isDragging.current = true;
+      autoRotate.current = false;
+      if (autoRotateTimer.current) clearTimeout(autoRotateTimer.current);
+      const touch = e.touches[0];
+      lastMouse.current = { x: touch.clientX, y: touch.clientY };
+    }
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (isDragging.current && e.touches.length === 1) {
+      const touch = e.touches[0];
+      const dx = touch.clientX - lastMouse.current.x;
+      const dy = touch.clientY - lastMouse.current.y;
+      rotYRef.current += dx * 0.005;
+      rotXRef.current = Math.max(-1.3, Math.min(1.3, rotXRef.current + dy * 0.005));
+      lastMouse.current = { x: touch.clientX, y: touch.clientY };
+    }
+  };
+  const onTouchEnd = () => {
+    isDragging.current = false;
+    if (autoRotateTimer.current) clearTimeout(autoRotateTimer.current);
+    autoRotateTimer.current = setTimeout(() => { autoRotate.current = true; }, 3500);
+  };
+
   return (
     <div ref={containerRef} className="relative w-full h-full">
       <canvas
@@ -479,6 +506,9 @@ export default function OrbitalGlobe({
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
         onMouseLeave={() => {
           onMouseUp();
           setTooltip(null);
