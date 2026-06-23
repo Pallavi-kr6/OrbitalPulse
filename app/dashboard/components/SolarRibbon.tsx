@@ -37,9 +37,9 @@ export default function SolarRibbon() {
   const [isPaused, setIsPaused] = useState(false);
 
   const kp: number = data?.kpIndex ?? 0;
-  const flares: { classType: string; beginTime: string }[] = data?.solarFlares ?? [];
-  const cmes: { activityID: string; startTime: string }[] = data?.coronalMassEjections ?? [];
-  const storms: { storm_strength: string; start_time: string }[] = data?.geomagneticStorms ?? [];
+  const flares = data?.recentFlares ?? [];
+  const cmes = data?.recentCMEs ?? [];
+  const storms: any[] = []; // Not available in SpaceWeatherResponse yet
 
   const alerts: AlertItem[] = [
     {
@@ -54,7 +54,7 @@ export default function SolarRibbon() {
       id: `flare-${i}`,
       type: "flare" as const,
       label: "SOLAR FLARE",
-      value: `Class ${f.classType} · ${new Date(f.beginTime).toUTCString().slice(5, 16)}`,
+      value: `Class ${f.flareClass} · ${new Date(f.beginTime).toUTCString().slice(5, 16)}`,
       color: "#f97316",
       icon: <Zap className="h-3 w-3" />,
     })),
@@ -62,7 +62,7 @@ export default function SolarRibbon() {
       id: `cme-${i}`,
       type: "cme" as const,
       label: "CME DETECTED",
-      value: `ID ${c.activityID.slice(-6)} · ${new Date(c.startTime).toUTCString().slice(5, 16)}`,
+      value: `At ${new Date(c.cmeTime || "").toUTCString().slice(5, 16)}`,
       color: "#a78bfa",
       icon: <Wind className="h-3 w-3" />,
     })),
